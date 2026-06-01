@@ -138,7 +138,11 @@ def cb_col(header, *needles):
 def canadabuys():
     rows = []
     try:
-        r = requests.get(CB_CSV, timeout=90); r.raise_for_status()
+        ua = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+              "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
+        r = requests.get(CB_CSV, timeout=90,
+                         headers={"User-Agent": ua, "Accept": "text/csv,*/*"})
+        r.raise_for_status()
         rd = csv.DictReader(io.StringIO(r.content.decode("utf-8-sig", errors="replace")))
         header = rd.fieldnames or []
         c_title = cb_col(header,"title","eng") or cb_col(header,"title")
@@ -214,7 +218,7 @@ def main():
         seen.add(r["id"]); merged.append(r)
     merged.sort(key=lambda r: r.get("date",""), reverse=True)
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    payload = {"updated": dt.datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
+    payload = {"updated": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
                "count": len(merged), "rows": merged}
     with open(OUT,"w",encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
