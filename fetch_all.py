@@ -36,7 +36,23 @@ CB_CATEGORIES = {"GD","SRVTGD"}   # mal + mala bağlı hizmet (talaşlı/döküm
 # --- SAM.gov ---
 SAM_ENDPOINT = "https://api.sam.gov/prod/opportunities/v2/search"
 SAM_KEY = os.environ.get("SAM_API_KEY", "")
-SAM_NAICS = ["332710", "331510", "331520"]   # machine shops, ferrous/nonferrous foundries
+# NAICS -> kategori. 6 haneli kodlar. "machining" = genel metal-işleme kovası
+# (talaşlı + sac + kesim + dövme + pres + yapısal); "casting" = dökümhane/die-cast.
+# Panelde şimdilik iki çip var (TALAŞLI/DÖKÜM); ayrı SAC/DÖVME çipi istersen sonra ekleriz.
+SAM_NAICS = {
+  # talaşlı / tornalama
+  "332710":"machining", "332721":"machining",
+  # döküm (demir/çelik/yatırım/nonferrous/die-cast)
+  "331511":"casting","331512":"casting","331513":"casting",
+  "331523":"casting","331524":"casting","331529":"casting",
+  # sac / plaka / yapısal / kesim / pres / form
+  "332322":"machining","332313":"machining","332312":"machining",
+  "332119":"machining","332114":"machining","332999":"machining",
+  # dövme / toz metalurji
+  "332111":"machining","332112":"machining","332117":"machining",
+  # boru / profil (satın alınan çelikten)
+  "331210":"machining","331221":"machining",
+}
 
 # --- sınıflandırma ---
 KW_CASTING = ["casting","castings","cast iron","ductile iron","grey iron","gray iron",
@@ -153,17 +169,12 @@ def canadabuys():
         c_url   = cb_col(header,"noticeurl","eng") or cb_col(header,"noticeurl")
         c_buyer = cb_col(header,"contactinfoname") or cb_col(header,"enduser") or cb_col(header,"organization")
         c_ref   = cb_col(header,"referencenumber") or cb_col(header,"solicitationnumber")
-        cutoff = (dt.date.today() - dt.timedelta(days=DAYS_BACK)).isoformat()
         for row in rd:
-            cat_field = (row.get(c_cat,"") if c_cat else "")
-            if CB_CATEGORIES and cat_field and not (set(cat_field.replace(" ","").split(",")) & CB_CATEGORIES):
-                continue
             title = (row.get(c_title,"") if c_title else "").strip()
             desc  = (row.get(c_desc,"") if c_desc else "")
             cat = classify(title+" "+desc)
             if not cat: continue
             pub = norm_date(row.get(c_pub,"") if c_pub else "")
-            if pub and pub < cutoff: continue
             ref = (row.get(c_ref,"") if c_ref else "") or title[:24]
             rows.append({"id":"cb-"+ref.strip().replace(" ","")[:24],"date":pub,
                 "source":"CanadaBuys","region":"CA","category":cat,"title":title,
@@ -182,30 +193,42 @@ def sam():
         print("SAM.gov: anahtar yok (SAM_API_KEY), atlandı"); return rows
     pf = (dt.date.today()-dt.timedelta(days=DAYS_BACK)).strftime("%m/%d/%Y")
     pt = dt.date.today().strftime("%m/%d/%Y")
-    for naics in SAM_NAICS:
+    offset, calls = 0, 0
+    while calls < 6:                      # 6 istek <= 10/gün limiti
         try:
-            params = {"api_key":SAM_KEY,"postedFrom":pf,"postedTo":pt,"limit":"1000",
-                      "offset":"0","ptype":"o","ncode":naics}
+            params = {"api_key":SAM_KEY,"postedFrom":pf,"postedTo":pt,
+                      "limit":"1000","offset":str(offset)}   # ptype yok = tüm tipler
             r = requests.get(SAM_ENDPOINT, params=params, timeout=60,
                              headers={"Accept":"application/json"})
+            calls += 1
             if r.status_code != 200:
-                print(f"SAM {naics}: HTTP {r.status_code} {r.text[:150]}"); continue
-            for o in r.json().get("opportunitiesData", []):
+                print(f"SAM HTTP {r.status_code}: {r.text[:150]}"); break
+            items = r.json().get("opportunitiesData", [])
+            if not items: break
+            for o in items:
+                typ = o.get("type") or ""
+                if "Award" in typ or "Justification" in typ: continue
+                naics = str(o.get("naicsCode") or "")
+                if not naics:
+                    nl = o.get("naics") or o.get("naicsCodes")
+                    if isinstance(nl, list) and nl:
+                        naics = str(nl[0].get("code") if isinstance(nl[0], dict) else nl[0])
+                cat = SAM_NAICS.get(naics)
+                if not cat: continue                       # NAICS setimizde değilse atla
                 title = o.get("title","")
-                # NAICS zaten talaşlı/dökümü garantiliyor; tezgâh-alımı kelimesi geçerse yine ele
-                cat = "casting" if naics.startswith("3315") else "machining"
                 if any(k in title.lower() for k in KW_EXCLUDE): continue
-                pop = (o.get("placeOfPerformance") or {})
+                pop = o.get("placeOfPerformance") or {}
+                c = pop.get("country") if isinstance(pop, dict) else None
+                country = (c.get("code") if isinstance(c, dict) else c) or "US"
                 rows.append({"id":"sam-"+str(o.get("noticeId") or o.get("solicitationNumber") or title[:20]),
-                    "date":norm_date(o.get("postedDate","")),"source":"SAM.gov",
-                    "region":(pop.get("country") or {}).get("code","US") if isinstance(pop.get("country"),dict) else "US",
+                    "date":norm_date(o.get("postedDate","")),"source":"SAM.gov","region":country,
                     "category":cat,"title":title,
                     "buyer":o.get("fullParentPathName") or o.get("organizationName",""),"value":"",
-                    "deadline":norm_date(o.get("responseDeadLine","")),
-                    "url":o.get("uiLink","")})
+                    "deadline":norm_date(o.get("responseDeadLine","")),"url":o.get("uiLink","")})
+            if len(items) < 1000: break
+            offset += 1000; time.sleep(1.0)
         except Exception as e:
-            print(f"SAM {naics} hata:", e)
-        time.sleep(1.0)
+            print("SAM hata:", e); break
     print(f"SAM.gov: {len(rows)} ilgili")
     return rows
 
