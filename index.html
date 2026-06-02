@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RFQ Radar · Navist Broker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#13161B;--panel:#1E242C;--panel2:#232A33;--line:#313A45;--line2:#3D4753;
+    --txt:#E8EAED;--txt-dim:#9AA4B0;--txt-mute:#697482;--amber:#F0A030;--amber-dim:#A8761F;
+    --signal:#3DD68C;--signal-dim:#1F6B47;--red:#FF5C5C;--steel:#5B9CC9;--mono:"IBM Plex Mono",monospace}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"IBM Plex Sans",sans-serif;background:var(--bg);color:var(--txt);line-height:1.45;
+    -webkit-font-smoothing:antialiased;padding:22px 16px 70px;
+    background-image:radial-gradient(circle at 50% -10%,rgba(240,160,48,.06),transparent 55%)}
+  .wrap{max-width:1080px;margin:0 auto}
+  a{color:var(--steel);text-decoration:none}a:hover{text-decoration:underline}
+  header{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;
+    border-bottom:1.5px solid var(--line);padding-bottom:16px;margin-bottom:16px}
+  .kick{font-family:var(--mono);font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--amber);display:flex;align-items:center;gap:9px}
+  .blip{width:7px;height:7px;border-radius:50%;background:var(--signal);box-shadow:0 0 0 0 rgba(61,214,140,.6);animation:p 2.2s infinite}
+  @keyframes p{0%{box-shadow:0 0 0 0 rgba(61,214,140,.55)}70%{box-shadow:0 0 0 8px rgba(61,214,140,0)}100%{box-shadow:0 0 0 0 rgba(61,214,140,0)}}
+  h1{font-family:"Archivo",sans-serif;font-weight:900;font-size:clamp(24px,5vw,38px);letter-spacing:-.01em;text-transform:uppercase;line-height:1;margin-top:8px}
+  h1 span{color:var(--amber)}
+  .upd{font-family:var(--mono);font-size:11px;color:var(--txt-dim);text-align:right}.upd b{color:var(--signal)}
+  .sectitle{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--txt-mute);margin:20px 0 10px;display:flex;justify-content:space-between;cursor:pointer}
+  .sectitle .x{color:var(--txt-mute)}
+  .sources{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .sources.hide{display:none}
+  .src{background:var(--panel);border:1px solid var(--line);padding:10px 11px;display:flex;flex-direction:column;gap:6px}
+  .src .top{display:flex;justify-content:space-between;gap:8px}.src .nm{font-weight:600;font-size:13px}
+  .tag{font-family:var(--mono);font-size:9px;font-weight:600;padding:1px 5px;white-space:nowrap}
+  .tag.free{color:var(--signal);border:1px solid var(--signal-dim)}.tag.premium{color:var(--amber);border:1px solid var(--amber-dim)}.tag.auto{color:var(--steel);border:1px solid var(--steel)}
+  .src .note{font-family:var(--mono);font-size:10px;color:var(--txt-mute);min-height:24px}
+  .openbtn{font-family:var(--mono);font-size:10px;color:var(--steel);border:1px solid var(--line2);padding:5px 9px;cursor:pointer;background:transparent;align-self:flex-start}
+  .addbox{background:var(--panel2);border:1px solid var(--line2);padding:12px 14px}
+  .addgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .addbox label{font-family:var(--mono);font-size:9px;letter-spacing:.06em;color:var(--txt-mute);text-transform:uppercase;display:block;margin-bottom:3px}
+  .addbox input,.addbox select{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--txt);font-family:var(--mono);font-size:12px;padding:7px 8px}
+  .f-wide{grid-column:span 2}
+  .addbtn{margin-top:9px;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:8px 15px;cursor:pointer;background:var(--amber);color:#1a1206;border:1px solid var(--amber)}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+  .search{flex:1;min-width:160px;background:var(--panel);border:1px solid var(--line);color:var(--txt);font-family:var(--mono);font-size:13px;padding:9px 12px}
+  select.f{background:var(--panel);border:1px solid var(--line);color:var(--txt-dim);font-family:var(--mono);font-size:11.5px;padding:8px 10px;cursor:pointer}
+  .barcount{font-family:var(--mono);font-size:11px;color:var(--txt-mute);margin-left:auto}
+  .thead,.rowi{display:grid;grid-template-columns:78px 1fr 132px 96px 150px 30px;gap:12px;align-items:center}
+  .thead{padding:9px 14px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--txt-mute);border-bottom:1px solid var(--line)}
+  .rowi{padding:13px 14px;border-bottom:1px solid var(--line);background:var(--panel)}
+  .rowi:hover{background:var(--panel2)}.rowi.is-new{box-shadow:inset 3px 0 0 var(--signal)}
+  .c-date{font-family:var(--mono);font-size:12px;color:var(--txt-dim)}
+  .newtag{display:inline-block;font-family:var(--mono);font-size:9px;font-weight:600;color:#0c1a12;background:var(--signal);padding:1px 5px;margin-top:4px}
+  .title{font-weight:600;font-size:14px}
+  .meta{font-family:var(--mono);font-size:11px;color:var(--txt-mute);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap}
+  .srclbl{font-family:var(--mono);font-size:10px;padding:2px 6px;border:1px solid var(--line2);color:var(--txt-dim)}
+  .cat{font-family:var(--mono);font-size:10px;padding:2px 6px}
+  .cat.machining{color:var(--steel);border:1px solid var(--steel)}.cat.casting{color:var(--amber);border:1px solid var(--amber-dim)}
+  .c-dead{font-family:var(--mono);font-size:12px;color:var(--txt-dim)}.c-dead .urg{color:var(--red);font-weight:600}.c-dead .soon{color:var(--amber)}
+  .c-dead .ol{display:block;margin-top:5px;font-size:11px}
+  select.status{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--txt-dim);font-family:var(--mono);font-size:11px;padding:6px 7px;cursor:pointer}
+  .del{background:transparent;border:none;color:var(--txt-mute);cursor:pointer;font-size:14px}.del:hover{color:var(--red)}
+  .empty{padding:42px 20px;text-align:center;color:var(--txt-mute);font-family:var(--mono);font-size:13px;background:var(--panel);border-bottom:1px solid var(--line)}
+  .foot{margin-top:20px;font-size:12px;color:var(--txt-mute);font-family:var(--mono);line-height:1.7}.foot b{color:var(--txt-dim)}
+  @media(max-width:760px){.sources{grid-template-columns:1fr}.addgrid{grid-template-columns:repeat(2,1fr)}.thead{display:none}.rowi{grid-template-columns:1fr 1fr;gap:8px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><div class="kick"><span class="blip"></span>NAVIST BROKER · ÇOK KAYNAKLI RADAR</div><h1>RFQ <span>Radar</span></h1></div>
+    <div class="upd" id="upd">yükleniyor…</div>
+  </header>
+
+  <div class="sectitle" id="srcToggle">Manuel/Paralı Kaynaklar — günlük tur <span class="x">[gizle/göster]</span></div>
+  <div class="sources" id="sources"></div>
+
+  <div class="sectitle">RFQ Ekle (manuel kaynaklardan bulduğun talep)</div>
+  <div class="addbox">
+    <div class="addgrid">
+      <div><label>Kaynak</label><select id="a_source"></select></div>
+      <div><label>Kategori</label><select id="a_cat"></select></div>
+      <div><label>Bölge</label><input id="a_region" placeholder="DE, AT..."></div>
+      <div><label>Termin</label><input id="a_deadline" type="date"></div>
+      <div class="f-wide"><label>Başlık</label><input id="a_title" placeholder="CNC işlenmiş braket, 500 adet"></div>
+      <div><label>Alıcı</label><input id="a_buyer"></div>
+      <div><label>Değer</label><input id="a_value" placeholder="~€40.000"></div>
+      <div class="f-wide"><label>Link (varsa)</label><input id="a_url"></div>
+    </div>
+    <button class="addbtn" id="addBtn">+ Board'a ekle</button>
+  </div>
+
+  <div class="sectitle">Takip Board'u (otomatik çekilen + manuel)</div>
+  <div class="bar">
+    <input class="search" id="search" placeholder="ara...">
+    <select class="f" id="fSource"><option value="">tüm kaynaklar</option></select>
+    <select class="f" id="fCat"><option value="">tüm kategoriler</option></select>
+    <select class="f" id="fStatus"><option value="">tüm durumlar</option></select>
+    <select class="f" id="fSort"><option value="new">en yeni</option><option value="deadline">termine yakın</option></select>
+    <span class="barcount" id="barCount"></span>
+  </div>
+  <div class="thead"><span>Tarih</span><span>Talep</span><span>Kaynak/Kat.</span><span>Termin</span><span>Durum</span><span></span></div>
+  <div id="list"></div>
+  <div class="foot" id="foot"></div>
+</div>
+<script>
+const SOURCES=[
+ {nm:"Xometry Partner",tag:"free",note:"Ücretsiz, Türkiye uygun — iş panosu",url:"https://xometry.eu/en/partners/"},
+ {nm:"SAP Discovery",tag:"free",note:"Ücretsiz — alıcı ilanları",url:"https://supplier.ariba.com"},
+ {nm:"Techpilot",tag:"premium",note:"RFQ için Premium (199€+/ay)",url:"https://www.techpilot.com/en"},
+ {nm:"Spanflug",tag:"free",note:"Talaşlı parça yönlendirme",url:"https://spanflug.de/en/"},
+ {nm:"Europages/wlw",tag:"free",note:"Firma keşfi (outreach)",url:"https://www.europages.com/"},
+ {nm:"Kompass",tag:"free",note:"Firma rehberi",url:"https://www.kompass.com/"},
+];
+const STATUSES=["Yeni","Teklif Hazırlanıyor","Teklif Verildi","Kazanıldı","Kaybedildi","Atlandı"];
+const CATEGORIES=["CNC & Hassas İşleme","Sac İşleme","Kaynak & Çelik Konstrüksiyon","Döküm & Foundry",
+  "Dövme & Şekillendirme","Bağlantı Elemanları","Plastik & Kauçuk","Yüzey İşlem & Kaplama",
+  "Montaj & Muhtelif İmalat","Endüstriyel Komponent","Elektrik Pano & Kabin",
+  "Makine/Otomotiv/Demiryolu Parça","Eklemeli İmalat & Prototip","Ambalaj & Konteyner"];
+const isCasting=c=>/dök|cast|foundry/i.test(c||"");
+const K_MANUAL="radar_manual_v1", K_STATUS="radar_status_v1";
+const todayISO=()=>new Date().toISOString().slice(0,10);
+const esc=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+let FETCHED=[],MANUAL=[],STATUS={};
+function load(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(e){return null}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function allRows(){return FETCHED.concat(MANUAL)}
+function stOf(id){return STATUS[id]||"Yeni"}
+function daysTo(d){if(!d)return null;return Math.round((new Date(d)-new Date(todayISO()))/864e5)}
+
+function renderSources(){
+  document.getElementById("sources").innerHTML=SOURCES.map(s=>`<div class="src"><div class="top"><span class="nm">${esc(s.nm)}</span><span class="tag ${s.tag}">${s.tag==='premium'?'PREMIUM':'ÜCRETSİZ'}</span></div><div class="note">${esc(s.note)}</div><button class="openbtn" data-u="${esc(s.url)}">Aç ↗</button></div>`).join("");
+  document.querySelectorAll(".openbtn").forEach(b=>b.onclick=()=>window.open(b.dataset.u,"_blank","noopener"));
+  const sel=document.getElementById("a_source");
+  sel.innerHTML=SOURCES.map(s=>`<option>${esc(s.nm)}</option>`).join("")+'<option>Diğer</option>';
+  document.getElementById("a_cat").innerHTML=CATEGORIES.map(c=>`<option>${esc(c)}</option>`).join("");
+}
+document.getElementById("srcToggle").onclick=()=>document.getElementById("sources").classList.toggle("hide");
+
+document.getElementById("addBtn").onclick=()=>{
+  const t=document.getElementById("a_title").value.trim();if(!t)return;
+  MANUAL.unshift({id:"m-"+Date.now(),date:todayISO(),source:document.getElementById("a_source").value,
+    region:document.getElementById("a_region").value.trim()||"—",category:document.getElementById("a_cat").value,
+    title:t,buyer:document.getElementById("a_buyer").value.trim(),value:document.getElementById("a_value").value.trim(),
+    deadline:document.getElementById("a_deadline").value,url:document.getElementById("a_url").value.trim()});
+  ["a_title","a_region","a_buyer","a_value","a_url"].forEach(i=>document.getElementById(i).value="");
+  document.getElementById("a_deadline").value="";save(K_MANUAL,MANUAL);fillFilters();render();
+};
+
+function fillFilters(){
+  const srcs=[...new Set(allRows().map(r=>r.source).filter(Boolean))];
+  const fs=document.getElementById("fSource"),c=fs.value;
+  fs.innerHTML='<option value="">tüm kaynaklar</option>'+srcs.map(v=>`<option>${esc(v)}</option>`).join("");fs.value=c;
+  const st=document.getElementById("fStatus"),cs=st.value;
+  st.innerHTML='<option value="">tüm durumlar</option>'+STATUSES.map(v=>`<option>${v}</option>`).join("");st.value=cs;
+  const cats=[...new Set(allRows().map(r=>r.category).filter(Boolean))].sort();
+  const fc=document.getElementById("fCat"),cc=fc.value;
+  fc.innerHTML='<option value="">tüm kategoriler</option>'+cats.map(v=>`<option>${esc(v)}</option>`).join("");fc.value=cc;
+}
+function render(){
+  const q=search.value.trim().toLowerCase(),fS=fSource.value,fC=fCat.value,fSt=fStatus.value,so=fSort.value;
+  let items=allRows().filter(r=>{
+    if(fS&&r.source!==fS)return false;if(fC&&r.category!==fC)return false;
+    if(fSt&&stOf(r.id)!==fSt)return false;
+    if(q){const h=(r.title+" "+r.buyer+" "+r.source).toLowerCase();if(!h.includes(q))return false}return true;});
+  items.sort((a,b)=>so==="deadline"?(new Date(a.deadline||"2999")-new Date(b.deadline||"2999")):(new Date(b.date||"1970")-new Date(a.date||"1970")));
+  const list=document.getElementById("list");
+  if(!items.length){list.innerHTML='<div class="empty">Kayıt yok. Otomatik çekim henüz çalışmadıysa biraz sonra dener; manuel kaynaklardan da ekleyebilirsin.</div>';}
+  else list.innerHTML=items.map(r=>{
+    const isNew=r.date===todayISO(),dt=daysTo(r.deadline);let dc="",dx=r.deadline?esc(r.deadline):"—";
+    if(dt!=null){if(dt<=5)dc="urg";else if(dt<=12)dc="soon";dx=esc(r.deadline)+" · "+(dt<0?"geçti":dt+"g");}
+    const st=stOf(r.id),manual=r.id.startsWith("m-");
+    return `<div class="rowi ${isNew?'is-new':''}"><div class="c-date">${esc(r.date||'—')}${isNew?'<br><span class="newtag">YENİ</span>':''}</div>
+      <div><div class="title">${esc(r.title)}</div><div class="meta">${r.buyer?'<span>▸ '+esc(r.buyer)+'</span>':''}${r.value?'<span>'+esc(r.value)+'</span>':''}<span>${esc(r.region)}</span></div></div>
+      <div><span class="srclbl">${esc(r.source)}</span> <span class="cat ${isCasting(r.category)?'casting':'machining'}">${esc(r.category||'—')}</span></div>
+      <div class="c-dead"><span class="${dc}">${dx}</span>${r.url?'<a class="ol" href="'+esc(r.url)+'" target="_blank" rel="noopener">aç ↗</a>':''}</div>
+      <div><select class="status" data-id="${esc(r.id)}">${STATUSES.map(s=>`<option ${s===st?'selected':''}>${s}</option>`).join("")}</select></div>
+      <div>${manual?'<button class="del" data-id="'+esc(r.id)+'">✕</button>':''}</div></div>`;}).join("");
+  list.querySelectorAll("select.status").forEach(s=>s.onchange=()=>{STATUS[s.dataset.id]=s.value;save(K_STATUS,STATUS);});
+  list.querySelectorAll(".del").forEach(b=>b.onclick=()=>{MANUAL=MANUAL.filter(x=>x.id!==b.dataset.id);save(K_MANUAL,MANUAL);fillFilters();render();});
+  document.getElementById("barCount").textContent=items.length+" / "+allRows().length;
+}
+["search","fSource","fCat","fStatus","fSort"].forEach(id=>{const el=document.getElementById(id);el.addEventListener("input",render);el.addEventListener("change",render);});
+document.getElementById("foot").innerHTML='<b>Nasıl çalışır:</b> TED + CanadaBuys + SAM.gov her gün otomatik çekilir (GitHub Actions) ve board\u0027a düşer. Xometry/Techpilot gibi otomatik çekilemeyen kaynakları yukarıdaki kartlardan elle gezip bulduğunu "RFQ Ekle" ile eklersin. Durum/manuel kayıtlar tarayıcında saklanır.';
+
+(async()=>{
+  MANUAL=load(K_MANUAL)||[];STATUS=load(K_STATUS)||{};
+  renderSources();
+  try{
+    const res=await fetch("./rfq.json",{cache:"no-store"});const data=await res.json();
+    FETCHED=(data.rows||[]).map(r=>Object.assign({value:""},r));
+    document.getElementById("upd").innerHTML="OTOMATİK ÇEKİM: <b>"+esc(data.updated||"—")+"</b><br>"+(data.count||0)+" kayıt + manuel";
+  }catch(e){
+    document.getElementById("upd").innerHTML="otomatik veri yok (Pages\u0027te çalışır)<br>manuel mod";
+  }
+  fillFilters();render();
+})();
+</script>
+</body>
+</html>
