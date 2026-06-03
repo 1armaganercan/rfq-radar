@@ -93,7 +93,7 @@ KW_CASTING = [
 KW_MACHINING = [
   # EN — talaşlı + sac + kaynak + dövme + kesim + yapısal
   "machined","machining","cnc","turned","milled","milling","turning",
-  "fabricated","fabrication","sheet metal","sheet-metal","weldment","welded","welding",
+  "metal fabrication","fabricated metal","sheet metal","sheet-metal","weldment","welded","welding",
   "forged","forging","stamping","stamped","laser cutting","plasma cutting","waterjet",
   "bending","structural steel","steel structure","steel fabrication","metal part","metal parts",
   "machined part","machined component","turned part","milled part","precision machined",
@@ -118,12 +118,12 @@ KW_MACHINING = [
   "verspaning","gefreesd","gedraaid","plaatwerk","lassen","gelast","staalconstructie","gesmeed",
   "bearbetning","fräsning","svarvning","plåt","svetsning","svetsad","laserskärning","stålkonstruktion","smide",
   # TR
-  "talaşlı","işlenmiş","torna","freze","sac","kaynak","kaynaklı","lazer kesim","büküm",
+  "talaşlı","işlenmiş","torna","freze","kaynak","kaynaklı","lazer kesim","büküm",
   "çelik konstrüksiyon","dövme","pres parça","sac metal",
-  # dişli / su jeti / boru-profil (çok dilli)
-  "gear","gears","gear cutting","zahnrad","engrenage","ingranagg","dişli",
+  # dişli / su jeti / boru-profil (çok dilli, metal-bağlamlı)
+  "gear cutting","gear manufactur","spur gear","helical gear","zahnrad","engrenage","ingranagg","dişli",
   "water jet","waterjet","wasserstrahl","jet d'eau","su jeti",
-  "pipe","pipes","tube","tubes","tubing","rohr","tuyau","tubo","trubka","rura","boru"]
+  "steel pipe","steel tube","pipe fitting","tube fitting","rohr","tuyau","trubka","boru"]
 
 # tezgâh/ekipman ALIMI sinyalleri -> bunlar geçerse ele (önce kontrol edilir, makine satın almayı eler)
 KW_EXCLUDE = [
@@ -149,7 +149,8 @@ KW_EXCLUDE = [
   "tezgah","tezgâh","torna tezgah","freze tezgah","cnc tezgah","kaynak makinesi",
   # inşaat / ekipman / sistem gürültüsü (TED CPV etiketleri)
   "portable building","prefabricated building","modular building","welding tool",
-  "brazing","additive manufactur","fabbricazione additiva"]
+  "brazing","additive manufactur","fabbricazione additiva",
+  "welding shop","welding supplies","welding supply","welding ventilation","compressed gas"]
 
 def classify(text):
     t = (text or "").lower()
