@@ -40,18 +40,34 @@ SAM_KEY = os.environ.get("SAM_API_KEY", "")
 # (talaşlı + sac + kesim + dövme + pres + yapısal); "casting" = dökümhane/die-cast.
 # Panelde şimdilik iki çip var (TALAŞLI/DÖKÜM); ayrı SAC/DÖVME çipi istersen sonra ekleriz.
 SAM_NAICS = {
-  # talaşlı / tornalama
-  "332710":"machining", "332721":"machining",
-  # döküm (demir/çelik/yatırım/nonferrous/die-cast)
-  "331511":"casting","331512":"casting","331513":"casting",
-  "331523":"casting","331524":"casting","331529":"casting",
-  # sac / plaka / yapısal / kesim / pres / form
-  "332322":"machining","332313":"machining","332312":"machining",
-  "332119":"machining","332114":"machining","332999":"machining",
-  # dövme / toz metalurji
-  "332111":"machining","332112":"machining","332117":"machining",
-  # boru / profil (satın alınan çelikten)
-  "331210":"machining","331221":"machining",
+  # MFG-01 CNC & Hassas İşleme
+  "332710":"CNC & Hassas İşleme","332721":"CNC & Hassas İşleme",
+  # MFG-02 Sac İşleme
+  "332322":"Sac İşleme","332313":"Sac İşleme","332114":"Sac İşleme",
+  # MFG-03 Kaynak & Çelik Konstrüksiyon
+  "332312":"Kaynak & Çelik Konstrüksiyon","332311":"Kaynak & Çelik Konstrüksiyon","332323":"Kaynak & Çelik Konstrüksiyon",
+  # MFG-04 Döküm & Foundry
+  "331511":"Döküm & Foundry","331512":"Döküm & Foundry","331513":"Döküm & Foundry",
+  "331523":"Döküm & Foundry","331524":"Döküm & Foundry","331529":"Döküm & Foundry",
+  # MFG-05 Dövme & Şekillendirme (+ pres/stamping)
+  "332111":"Dövme & Şekillendirme","332112":"Dövme & Şekillendirme",
+  "332117":"Dövme & Şekillendirme","332119":"Dövme & Şekillendirme",
+  # MFG-06 Bağlantı Elemanları
+  "332722":"Bağlantı Elemanları","332510":"Bağlantı Elemanları","332618":"Bağlantı Elemanları",
+  # MFG-07 Plastik & Kauçuk
+  "326199":"Plastik & Kauçuk","326220":"Plastik & Kauçuk","326291":"Plastik & Kauçuk","326122":"Plastik & Kauçuk",
+  # MFG-08 Yüzey İşlem & Kaplama
+  "332812":"Yüzey İşlem & Kaplama","332813":"Yüzey İşlem & Kaplama",
+  # MFG-09 Montaj & Muhtelif İmalat
+  "332999":"Montaj & Muhtelif İmalat",
+  # MFG-10 Endüstriyel Komponent (valf/fitting/rulman/boru/profil)
+  "332911":"Endüstriyel Komponent","332912":"Endüstriyel Komponent","332919":"Endüstriyel Komponent",
+  "332991":"Endüstriyel Komponent","332996":"Endüstriyel Komponent",
+  "331210":"Endüstriyel Komponent","331221":"Endüstriyel Komponent",
+  # MFG-12 Makine/Otomotiv/Demiryolu Parça
+  "336510":"Makine/Otomotiv/Demiryolu Parça","336370":"Makine/Otomotiv/Demiryolu Parça","336390":"Makine/Otomotiv/Demiryolu Parça",
+  # MFG-14 Ambalaj & Konteyner
+  "332431":"Ambalaj & Konteyner","332439":"Ambalaj & Konteyner",
 }
 
 # --- sınıflandırma ---
@@ -75,8 +91,8 @@ KW_EXCLUDE = ["machine tool","machine tools","machining centre","machining cente
 def classify(text):
     t = (text or "").lower()
     if any(k in t for k in KW_EXCLUDE): return None      # tezgâh alımı -> ele
-    if any(k in t for k in KW_CASTING): return "casting"
-    if any(k in t for k in KW_MACHINING): return "machining"
+    if any(k in t for k in KW_CASTING): return "Döküm & Foundry"
+    if any(k in t for k in KW_MACHINING): return "CNC & Hassas İşleme"
     return None
 
 def norm_date(s):
@@ -113,7 +129,7 @@ def ted_fetch(query, page, fields, limit=100):
     return r.json()
 
 def ted():
-    rows = []
+    rows = []; raw = 0
     try:
         q = ted_query()
         fields = list(TED_FIELDS_SAFE)
@@ -125,6 +141,7 @@ def ted():
             data = ted_fetch(q,page,fields)
             res = data.get("notices") or data.get("results") or []
             if not res: break
+            raw += len(res)
             for it in res:
                 pub = first(it,"publication-number","ND")
                 title = first(it,"notice-title","TI",default="")
@@ -141,7 +158,7 @@ def ted():
             time.sleep(1.0)
     except Exception as e:
         print("TED hata:", e)
-    print(f"TED: {len(rows)} ilgili")
+    print(f"TED: ham {raw}, ilgili {len(rows)}")
     return rows
 
 # ===================== CanadaBuys =====================
@@ -152,7 +169,7 @@ def cb_col(header, *needles):
     return None
 
 def canadabuys():
-    rows = []
+    rows = []; total = 0
     try:
         ua = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
               "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
@@ -169,7 +186,9 @@ def canadabuys():
         c_url   = cb_col(header,"noticeurl","eng") or cb_col(header,"noticeurl")
         c_buyer = cb_col(header,"contactinfoname") or cb_col(header,"enduser") or cb_col(header,"organization")
         c_ref   = cb_col(header,"referencenumber") or cb_col(header,"solicitationnumber")
+        print(f"  CB sütunlar: title={c_title} | desc={c_desc} | close={c_close} | url={c_url}")
         for row in rd:
+            total += 1
             title = (row.get(c_title,"") if c_title else "").strip()
             desc  = (row.get(c_desc,"") if c_desc else "")
             cat = classify(title+" "+desc)
@@ -183,7 +202,7 @@ def canadabuys():
                 "url":(row.get(c_url,"") if c_url else "").strip()})
     except Exception as e:
         print("CanadaBuys hata:", e)
-    print(f"CanadaBuys: {len(rows)} ilgili")
+    print(f"CanadaBuys: {total} satır tarandı, {len(rows)} ilgili")
     return rows
 
 # ===================== SAM.gov =====================
