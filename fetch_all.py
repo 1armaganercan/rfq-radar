@@ -123,7 +123,7 @@ KW_MACHINING = [
   # dişli / su jeti / boru-profil (çok dilli)
   "gear","gears","gear cutting","zahnrad","engrenage","ingranagg","dişli",
   "water jet","waterjet","wasserstrahl","jet d'eau","su jeti",
-  "pipe","pipes","tube","tubes","tubing","rohr","tuyau","tubo","trubka","rura","boru","profil"]
+  "pipe","pipes","tube","tubes","tubing","rohr","tuyau","tubo","trubka","rura","boru"]
 
 # tezgâh/ekipman ALIMI sinyalleri -> bunlar geçerse ele (önce kontrol edilir, makine satın almayı eler)
 KW_EXCLUDE = [
@@ -146,7 +146,10 @@ KW_EXCLUDE = [
   "gereedschapsmachine","draaibank","freesmachine","lasapparaat",
   "verktygsmaskin","svarv","fräsmaskin","svetsmaskin",
   # TR
-  "tezgah","tezgâh","torna tezgah","freze tezgah","cnc tezgah","kaynak makinesi"]
+  "tezgah","tezgâh","torna tezgah","freze tezgah","cnc tezgah","kaynak makinesi",
+  # inşaat / ekipman / sistem gürültüsü (TED CPV etiketleri)
+  "portable building","prefabricated building","modular building","welding tool",
+  "brazing","additive manufactur","fabbricazione additiva"]
 
 def classify(text):
     t = (text or "").lower()
@@ -250,9 +253,7 @@ def canadabuys():
         for row in rd:
             total += 1
             title = (row.get(c_title,"") if c_title else "").strip()
-            desc  = (row.get(c_desc,"") if c_desc else "")
-            gsin  = (row.get(c_gsin,"") if c_gsin else "")
-            cat = classify(title+" "+desc+" "+gsin)
+            cat = classify(title)          # sadece başlık -> açıklama/GSIN gürültüsü elenir
             if not cat: continue
             pub = norm_date(row.get(c_pub,"") if c_pub else "")
             ref = (row.get(c_ref,"") if c_ref else "") or title[:24]
