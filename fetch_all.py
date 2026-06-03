@@ -15,7 +15,7 @@ GitHub Actions her gün çalıştırır; çıktı site/rfq.json -> Pages'te sayf
 Yerelde test: pip install requests; SAM için: export SAM_API_KEY=...; python fetch_all.py
 """
 
-import os, json, csv, io, time, datetime as dt
+import os, json, csv, io, time, re, datetime as dt
 import requests
 
 # ===================== CONFIG =====================
@@ -70,6 +70,8 @@ SAM_NAICS = {
   "336510":"Makine/Otomotiv/Demiryolu Parça","336370":"Makine/Otomotiv/Demiryolu Parça","336390":"Makine/Otomotiv/Demiryolu Parça",
   # MFG-14 Ambalaj & Konteyner
   "332431":"Ambalaj & Konteyner","332439":"Ambalaj & Konteyner",
+  # Dişli & Tahrik (gear making)
+  "333612":"Dişli & Tahrik",
 }
 
 # --- sınıflandırma ---
@@ -117,7 +119,11 @@ KW_MACHINING = [
   "bearbetning","fräsning","svarvning","plåt","svetsning","svetsad","laserskärning","stålkonstruktion","smide",
   # TR
   "talaşlı","işlenmiş","torna","freze","sac","kaynak","kaynaklı","lazer kesim","büküm",
-  "çelik konstrüksiyon","dövme","pres parça","sac metal"]
+  "çelik konstrüksiyon","dövme","pres parça","sac metal",
+  # dişli / su jeti / boru-profil (çok dilli)
+  "gear","gears","gear cutting","zahnrad","engrenage","ingranagg","dişli",
+  "water jet","waterjet","wasserstrahl","jet d'eau","su jeti",
+  "pipe","pipes","tube","tubes","tubing","rohr","tuyau","tubo","trubka","rura","boru","profil"]
 
 # tezgâh/ekipman ALIMI sinyalleri -> bunlar geçerse ele (önce kontrol edilir, makine satın almayı eler)
 KW_EXCLUDE = [
@@ -307,12 +313,21 @@ def sam():
     return rows
 
 # ===================== merge & write =====================
+def norm_title(t):
+    return re.sub(r"[^a-z0-9]+", " ", (t or "").lower()).strip()[:70]
+
 def main():
     all_rows = ted() + canadabuys() + sam()
-    seen, merged = set(), []
+    seen_id, seen_title, merged, dups = set(), set(), [], 0
     for r in all_rows:
-        if r["id"] in seen: continue
-        seen.add(r["id"]); merged.append(r)
+        if r["id"] in seen_id: continue
+        nt = norm_title(r.get("title"))
+        if nt and nt in seen_title:          # aynı RFQ farklı kaynakta -> tek tut
+            dups += 1; continue
+        seen_id.add(r["id"])
+        if nt: seen_title.add(nt)
+        merged.append(r)
+    if dups: print(f"dedup: {dups} tekrar elendi")
     merged.sort(key=lambda r: r.get("date",""), reverse=True)
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     payload = {"updated": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
