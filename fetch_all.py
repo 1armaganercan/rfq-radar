@@ -71,22 +71,74 @@ SAM_NAICS = {
 }
 
 # --- sınıflandırma ---
-KW_CASTING = ["casting","castings","cast iron","ductile iron","grey iron","gray iron",
-  "investment casting","sand casting","die casting","foundry",
-  "gussteil","gusseisen","sphäroguss","fonderie","moulage"," fonte","getti","ghisa",
-  "odlitek","odlitky","liatina","döküm","sfero"]
-KW_MACHINING = ["machined part","machined parts","machined component","turned part","milled part",
-  "precision machined","subcontract machining","contract machining","cnc machining of",
-  "machining of parts","drehteil","frästeil","zerspanung","pièce usinée","pièces usinées",
-  "particolare meccanico","işlenmiş parça","talaşlı imal","talaşlı işle"]
-# tezgâh/ekipman ALIMI sinyalleri -> bunlar geçerse ele (TED'i batıran gürültü)
-KW_EXCLUDE = ["machine tool","machine tools","machining centre","machining center",
-  "milling machine","drilling machine","grinding machine","lathe machine","cnc lathe",
-  "cnc machine","cnc milling","boring machine","sawing machine","press brake","laser cutter",
-  "laserschneider","werkzeugmaschine","drehmaschine","fräsmaschine","schleifmaschine",
-  "bohrmaschine","soustruh","frézka","obráběcí stroj","centre d'usinage","centres d'usinage",
-  "fraiseuse","tour à commande","tornio","fresatrice","alesatrice","macchina utensile",
-  "tezgah","tezgâh"]
+KW_CASTING = [
+  # EN
+  "casting","castings","cast iron","ductile iron","grey iron","gray iron","cast steel",
+  "investment casting","sand casting","die casting","foundry","cast part",
+  # DE / FR / IT / NL / SE
+  "guss","gussteil","gusseisen","sphäroguss","gießerei","gegossen",
+  "fonderie","moulage"," fonte","pièce moulée","coulée",
+  "fonderia","fusione","ghisa","getti","getto di",
+  "gietwerk","gietstuk","gietijzer","gjutgods","gjutning","gjutjärn",
+  # CZ / PL / RO
+  "odlitek","odlitky","slévárna","litina","odlew","odlewy","odlewnia","żeliwo",
+  "turnare","turnat","fontă","piese turnate",
+  # TR
+  "döküm","pik döküm","sfero"]
+
+KW_MACHINING = [
+  # EN — talaşlı + sac + kaynak + dövme + kesim + yapısal
+  "machined","machining","cnc","turned","milled","milling","turning",
+  "fabricated","fabrication","sheet metal","sheet-metal","weldment","welded","welding",
+  "forged","forging","stamping","stamped","laser cutting","plasma cutting","waterjet",
+  "bending","structural steel","steel structure","steel fabrication","metal part","metal parts",
+  "machined part","machined component","turned part","milled part","precision machined",
+  # DE
+  "zerspanung","gefräst","gedreht","drehteil","frästeil","blech","blechteil","blechbearbeitung",
+  "schweiß","geschweißt","schweißbaugruppe","biegen","laserschneiden","stahlbau","metallbau",
+  "schmiedeteil","gestanzt","stanzteil",
+  # FR
+  "usinage","usiné","fraisage","tournage","tôle","tôlerie","soudure","soudé","soudage",
+  "découpe laser","pliage","charpente métallique","pièce métallique","pièce usinée","pièces usinées",
+  "forgé","emboutissage",
+  # IT
+  "lavorazione meccanica","tornitura","fresatura","lamiera","carpenteria metallica","saldatura",
+  "saldato","taglio laser","piegatura","particolare meccanico","stampaggio","forgiato",
+  # CZ / PL / RO / NL / SE
+  "obrábění","frézování","soustružení","plech","svařování","svařovaný","ohýbání",
+  "ocelová konstrukce","výpalky",
+  "obróbka","frezowanie","toczenie","blacha","spawanie","spawane","gięcie",
+  "konstrukcja stalowa","wycinanie laserowe","tłoczenie","kucie",
+  "prelucrare","frezare","strunjire","tablă","sudură","sudat","debitare laser","îndoire",
+  "structură metalică","ștanțare","forjare","confecții metalice",
+  "verspaning","gefreesd","gedraaid","plaatwerk","lassen","gelast","staalconstructie","gesmeed",
+  "bearbetning","fräsning","svarvning","plåt","svetsning","svetsad","laserskärning","stålkonstruktion","smide",
+  # TR
+  "talaşlı","işlenmiş","torna","freze","sac","kaynak","kaynaklı","lazer kesim","büküm",
+  "çelik konstrüksiyon","dövme","pres parça","sac metal"]
+
+# tezgâh/ekipman ALIMI sinyalleri -> bunlar geçerse ele (önce kontrol edilir, makine satın almayı eler)
+KW_EXCLUDE = [
+  "machine tool","machine tools","machining centre","machining center","milling machine",
+  "drilling machine","grinding machine","lathe machine","cnc lathe","cnc machine","cnc milling",
+  "boring machine","sawing machine","press brake","laser cutter","laser cutting machine",
+  "welding machine","bending machine","stamping press","forging press","induction furnace",
+  # DE
+  "werkzeugmaschine","drehmaschine","fräsmaschine","schleifmaschine","bohrmaschine",
+  "sägemaschine","laserschneidmaschine","schweißgerät","biegemaschine","abkantpresse",
+  # FR / IT
+  "machine-outil","tour à commande","fraiseuse","perceuse","rectifieuse","presse plieuse",
+  "machine de découpe","poste à souder","centre d'usinage","centres d'usinage",
+  "macchina utensile","tornio","fresatrice","alesatrice","rettificatrice","pressa piegatrice",
+  "saldatrice",
+  # CZ / PL / RO / NL / SE
+  "obráběcí stroj","soustruh","frézka","bruska","ohraňovací lis","svářečka",
+  "obrabiarka","tokarka","frezarka","szlifierka","prasa krawędziowa","spawarka",
+  "mașină-unealtă","strung","mașină de găurit","aparat de sudură",
+  "gereedschapsmachine","draaibank","freesmachine","lasapparaat",
+  "verktygsmaskin","svarv","fräsmaskin","svetsmaskin",
+  # TR
+  "tezgah","tezgâh","torna tezgah","freze tezgah","cnc tezgah","kaynak makinesi"]
 
 def classify(text):
     t = (text or "").lower()
@@ -179,19 +231,21 @@ def canadabuys():
         rd = csv.DictReader(io.StringIO(r.content.decode("utf-8-sig", errors="replace")))
         header = rd.fieldnames or []
         c_title = cb_col(header,"title","eng") or cb_col(header,"title")
-        c_desc  = cb_col(header,"description","eng")
+        c_desc  = cb_col(header,"tenderdescription","eng") or cb_col(header,"description","eng")
+        c_gsin  = cb_col(header,"gsindescription","eng")
         c_cat   = cb_col(header,"procurementcategory")
         c_pub   = cb_col(header,"publicationdate")
         c_close = cb_col(header,"closingdate") or cb_col(header,"tenderclosing")
         c_url   = cb_col(header,"noticeurl","eng") or cb_col(header,"noticeurl")
         c_buyer = cb_col(header,"contactinfoname") or cb_col(header,"enduser") or cb_col(header,"organization")
         c_ref   = cb_col(header,"referencenumber") or cb_col(header,"solicitationnumber")
-        print(f"  CB sütunlar: title={c_title} | desc={c_desc} | close={c_close} | url={c_url}")
+        print(f"  CB sütunlar: title={c_title} | desc={c_desc} | gsin={c_gsin} | close={c_close} | url={c_url}")
         for row in rd:
             total += 1
             title = (row.get(c_title,"") if c_title else "").strip()
             desc  = (row.get(c_desc,"") if c_desc else "")
-            cat = classify(title+" "+desc)
+            gsin  = (row.get(c_gsin,"") if c_gsin else "")
+            cat = classify(title+" "+desc+" "+gsin)
             if not cat: continue
             pub = norm_date(row.get(c_pub,"") if c_pub else "")
             ref = (row.get(c_ref,"") if c_ref else "") or title[:24]
