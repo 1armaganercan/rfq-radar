@@ -21,6 +21,8 @@ import requests
 # ===================== CONFIG =====================
 DAYS_BACK = 7
 OUT = "site/rfq.json"
+UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+      "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
 
 # --- TED ---
 TED_ENDPOINT = "https://api.ted.europa.eu/v3/notices/search"
@@ -175,20 +177,19 @@ def ted_query():
 def ted_fetch(query, page, fields, limit=100):
     body = {"query":query,"fields":fields,"page":page,"limit":limit,"scope":"ACTIVE",
             "paginationMode":"PAGE_NUMBER","checkQuerySyntax":False}
-    r = requests.post(TED_ENDPOINT, json=body, timeout=40,
-                      headers={"Accept":"application/json","Content-Type":"application/json"})
-    if r.status_code != 200: raise RuntimeError(f"HTTP {r.status_code}: {r.text[:300]}")
-    return r.json()
+    hdr = {"Accept":"application/json","Content-Type":"application/json","User-Agent":UA}
+    for attempt in range(2):
+        r = requests.post(TED_ENDPOINT, json=body, timeout=40, headers=hdr)
+        if r.status_code == 200: return r.json()
+        if r.status_code in (403, 429) and attempt == 0:
+            time.sleep(6); continue
+        raise RuntimeError(f"HTTP {r.status_code}: {r.text[:200]}")
 
 def ted():
     rows = []; raw = 0
     try:
         q = ted_query()
-        fields = list(TED_FIELDS_SAFE)
-        for f in TED_FIELDS_EXTRA:
-            try: ted_fetch(q,1,fields+[f],1); fields.append(f)
-            except RuntimeError: pass
-            time.sleep(0.5)
+        fields = TED_FIELDS_SAFE + TED_FIELDS_EXTRA
         for page in range(1,6):
             data = ted_fetch(q,page,fields)
             res = data.get("notices") or data.get("results") or []
